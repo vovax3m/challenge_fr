@@ -1,0 +1,42 @@
+- name: httpstat bad port
+  url: https://httpstat.us:2222/200
+- body: '{"foo":"bar"'
+  headers:
+    content-type: application/json
+  method: POST
+  name: bad body
+  url: https://dev-sre-take-home-exercise-rubric.us-east-1.recruiting-public.fetchrewards.com/body
+- body: '{"foo":"bar"}'
+  headers:
+    content-type: application/json
+  method: POST
+  name: sample body up
+  url: https://dev-sre-take-home-exercise-rubric.us-east-1.recruiting-public.fetchrewards.com/body
+- name: sample index up
+  url: https://dev-sre-take-home-exercise-rubric.us-east-1.recruiting-public.fetchrewards.com/
+- body: "{}"
+  headers:
+    content-type: application/json
+  method: POST
+  name: sample body down
+  url: https://dev-sre-take-home-exercise-rubric.us-east-1.recruiting-public.fetchrewards.com/body
+- name: sample error down
+  url: https://dev-sre-take-home-exercise-rubric.us-east-1.recruiting-public.fetchrewards.com/error
+- name: sample with port
+  url: https://dev-sre-take-home-exercise-rubric.us-east-1.recruiting-public.fetchrewards.com:443/
+- name: sample with bad port
+  url: https://dev-sre-take-home-exercise-rubric.us-east-1.recruiting-public.fetchrewards.com:444/
+- name: another domain
+  url: https://example.com/
+- name: httpstat only 500 code
+  url: https://httpstat.us/500
+- name: httpstat with port 200 code
+  url: https://httpstat.us:443/200?sleep=100
+- name: httpstat with port long response
+  url: https://httpstat.us:443/200?sleep=600
+- name: httpstat no port long response
+  url: https://httpstat.us/200?sleep=600
+- name: httpstat bad scheme
+  url: htts://httpstat.us/200
+- name: httpstat bad config
+  method: POST

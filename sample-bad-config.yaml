@@ -1,0 +1,4 @@
+- name: httpstat bad scheme
+  url: https://httpstat.us/200
+- name: httpstat no url
+  method: POST

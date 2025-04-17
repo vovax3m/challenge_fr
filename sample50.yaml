@@ -1,0 +1,8 @@
+- name: httpstat only 500 code
+  url: https://httpstat.us/500
+- name: httpstat with port 200 code
+  url: https://httpstat.us:443/200?sleep=100
+- name: httpstat no port
+  url: https://httpstat.us/200
+- name: httpstat no port long response
+  url: https://httpstat.us/200?sleep=1000
