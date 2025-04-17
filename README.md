@@ -4,8 +4,9 @@
 This is an improved and fixed script for checking endpoint's availability based on input config file.
 
 # How to run original script
+add go.mod with 
 ```
- add go.mod with `go mod init github.com/vovax3m/challenge_fr`
+ go mod init github.com/vovax3m/challenge_fr
  go mod tidy
 ```
 # How to run raw script
