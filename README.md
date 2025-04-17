@@ -11,9 +11,10 @@ This is an improved and fixed script for checking endpoint's availability based 
  go run main.go path/to/sample.yaml
 
 # How to build binary
+  ```
   cd golang
   go build .
-
+  ```
 # How to execute binary
   ./challenge_fr path/to/sample.yaml
 
