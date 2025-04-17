@@ -4,32 +4,38 @@
 This is an improved and fixed script for checking endpoint's availability based on input config file.
 
 # How to run original script
+```
  add go.mod with `go mod init github.com/vovax3m/challenge_fr`
  go mod tidy
-
+```
 # How to run raw script
+```
  go run main.go path/to/sample.yaml
-
+```
 # How to build binary
   ```
   cd golang
   go build .
   ```
 # How to execute binary
+```
   ./challenge_fr path/to/sample.yaml
-
+```
 # How to build docker image
+```
 docker build . -t challenge_fr:1
-
+```
 # How to run dockerized app
+```
 //configs could be baked into the image and app executed without addition configs, but it's a bad practice, so mounting from host
 // -e LOG_LEVEL is optional to enable debug informaiton
 docker run -ti -e LOG_LEVEL=DEBUG -v '/path/to/sample.yaml:/go/sample.yaml:ro' challenge_fr:1 /go/challenge_fr /go/sample.yaml
-
+```
 # Feature flags
+```
 export LOG_LEVEL=DEBUG // to enable detailed information
 unset LOG_LEVEL // to show only report and errors
-
+```
 # Found issues with original code:
 
 - go.mod not exists
