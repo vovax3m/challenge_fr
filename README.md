@@ -50,7 +50,7 @@ unset LOG_LEVEL // to show only report and errors
 - Update readme file
 
 # TODO:
-- Move timing values to separate configfile or structure
+- Move timing (wait, latency) values to the separate config file or structure
 - Add input file/entry validation
 - Add an option to write logs to the file
 - Expose prometheus metrics
