@@ -145,6 +145,6 @@ request_latency_miliseconds_count{domain="dev-sre-take-home-exercise-rubric.us-e
 # HELP request_latency_miliseconds_last Last request latency per domain
 # TYPE request_latency_miliseconds_last gauge
 request_latency_miliseconds_last{domain="dev-sre-take-home-exercise-rubric.us-east-1.recruiting-public.fetchrewards.com"} 876
-# HELP uptime_total The total number of service uptime
+# HELP uptime_total The total number of seconds service uptime
 # TYPE uptime_total counter
 uptime_total 59
