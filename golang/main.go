@@ -7,6 +7,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"gopkg.in/yaml.v3"
+	"io"
 	"io/ioutil"
 	"log"
 	"math"
@@ -14,8 +16,6 @@ import (
 	"os"
 	"strings"
 	"time"
-
-	"gopkg.in/yaml.v3"
 )
 
 // Endpoint is the representation of a configuration for each section of config.
@@ -35,12 +35,12 @@ type DomainStats struct {
 
 // various variables initialization of the app
 var (
-	stats                          = make(map[string]*DomainStats)
 	infoLog                        = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
 	debugLog                       = log.New(os.Stdout, "DEBUG: ", log.Ldate|log.Ltime|log.Lshortfile)
 	errorLog                       = log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
-	sleepLog         time.Duration = 15
-	sleepCheck       time.Duration = 15
+	stats                          = make(map[string]*DomainStats)
+	timerLog         time.Duration = 15
+	timerCheck       time.Duration = 15
 	latencyThreshold int64         = 500
 	httpRespMin      int           = 200
 	httpRespMax      int           = 300
@@ -51,9 +51,9 @@ var (
 // it returns nothing
 // executed as a gorouting
 func checkHealth(endpoint Endpoint) {
-	debugLogFunc("goroutine checkHealth for: " + endpoint.Name)
+	printDebug("goroutine checkHealth for: " + endpoint.Name)
 	domain := extractDomain(endpoint.URL)
-	debugLogFunc("   stat success/total=" + fmt.Sprint(stats[domain].Success) + "/" + fmt.Sprint(stats[domain].Total))
+	printDebug("   stat success/total=" + fmt.Sprint(stats[domain].Success) + "/" + fmt.Sprint(stats[domain].Total))
 
 	var client = &http.Client{}
 
@@ -62,20 +62,20 @@ func checkHealth(endpoint Endpoint) {
 		return
 	}
 	//commented some lines as too deep information for daily troubleshooting, was used for feature checking
-	//debugLogFunc("    bodyBytes= " + fmt.Sprint(bodyBytes))
+	//printDebug("    bodyBytes= " + fmt.Sprint(bodyBytes))
 	reqBody := bytes.NewReader(bodyBytes)
-	//debugLogFunc("    reqBody= " + fmt.Sprint(reqBody))
+	//printDebug("    reqBody= " + fmt.Sprint(reqBody))
 
 	req, err := http.NewRequest(endpoint.Method, endpoint.URL, reqBody)
 	if err != nil {
 		errorLog.Println("Error creating request:", err)
 		return
 	}
-	//debugLogFunc("    req= " + fmt.Sprint(req))
+	//printDebug("    req= " + fmt.Sprint(req))
 
 	for key, value := range endpoint.Headers {
 		req.Header.Set(key, value)
-		//debugLogFunc("    headers: key" + fmt.Sprint(key) + " value=" + fmt.Sprint(value))
+		//printDebug("    headers: key" + fmt.Sprint(key) + " value=" + fmt.Sprint(value))
 	}
 	reqstart := time.Now()
 	resp, err := client.Do(req)
@@ -83,15 +83,15 @@ func checkHealth(endpoint Endpoint) {
 	stats[domain].Total++
 	if err == nil && resp.StatusCode >= httpRespMin && resp.StatusCode < httpRespMax && reqcompleted < latencyThreshold {
 		stats[domain].Success++
-		debugLogFunc("   request \"" + endpoint.Name + "\" for " + domain + " is succedded and added to the success counter")
+		printDebug("   request \"" + endpoint.Name + "\" for " + domain + " is succedded and added to the success counter")
 	} else {
 		if err == nil {
-			debugLogFunc("   request to " + domain + " failed due to condtions, code=" + fmt.Sprint(resp.StatusCode) + " in " + fmt.Sprint(reqcompleted) + "ms")
+			printDebug("   request to " + domain + " failed due to condtions, code=" + fmt.Sprint(resp.StatusCode) + " in " + fmt.Sprint(reqcompleted) + "ms")
 		} else {
 			errorLog.Printf("    request failed with " + fmt.Sprint(err))
 		}
 	}
-	debugLogFunc("   domain=" + domain)
+	printDebug("   domain=" + domain)
 
 }
 
@@ -115,21 +115,21 @@ func extractDomain(url string) string {
 // used as a main cycle for the script
 func monitorEndpoints(endpoints []Endpoint) {
 	for _, endpoint := range endpoints {
-		debugLogFunc("Initializing over=" + fmt.Sprint(endpoint.Name))
-		debugLogFunc("  Endpoint=" + fmt.Sprint(endpoint.URL))
+		printDebug("Initializing over=" + fmt.Sprint(endpoint.Name))
+		printDebug("  Endpoint=" + fmt.Sprint(endpoint.URL))
 		domain := extractDomain(endpoint.URL)
-		debugLogFunc("  Domain=" + fmt.Sprint(domain))
+		printDebug("  Domain=" + fmt.Sprint(domain))
 		if stats[domain] == nil {
 			stats[domain] = &DomainStats{}
 		}
 	}
 
-	debugLogFunc("Main checking loop")
+	printDebug("Main checking loop")
 	for {
 		for _, endpoint := range endpoints {
 			go checkHealth(endpoint)
 		}
-		time.Sleep(sleepCheck * time.Second)
+		time.Sleep(timerCheck * time.Second)
 	}
 }
 
@@ -139,7 +139,7 @@ func monitorEndpoints(endpoints []Endpoint) {
 // used as an independent logs renderer
 func logTimer() {
 	for {
-		time.Sleep(sleepLog * time.Second)
+		time.Sleep(timerLog * time.Second)
 		logResults()
 	}
 }
@@ -148,18 +148,18 @@ func logTimer() {
 // takes nothing
 // return nothing
 func logResults() {
-	debugLogFunc("gorutine for logResults started")
+	printDebug("gorutine for logResults started")
 	for domain, stat := range stats {
 		percentage := int(math.Round(100 * float64(stat.Success) / float64(stat.Total)))
-		debugLogFunc(domain + " success/total=" + fmt.Sprint(stat.Success) + "/" + fmt.Sprint(stat.Total) + "=" + fmt.Sprint(percentage))
+		printDebug(domain + " success/total=" + fmt.Sprint(stat.Success) + "/" + fmt.Sprint(stat.Total) + "=" + fmt.Sprint(percentage))
 		infoLog.Printf("%s has %d%% availability\n", domain, percentage)
 	}
 }
 
-// debugLogFunc function is sending message to logs if debug mode is enabled only
+// printDebug function is sending message to logs if debug mode is enabled only
 // takes message string and envvar LOG_LEVEL
 // return nothing
-func debugLogFunc(message string) {
+func printDebug(message string) {
 	lvl, _ := os.LookupEnv("LOG_LEVEL")
 	if lvl == "DEBUG" {
 		debugLog.Print(message)
@@ -168,7 +168,7 @@ func debugLogFunc(message string) {
 
 // validateEndpoints function checks if config entry has all required fields to check availabiliry
 // takes reference of endpoints from config file
-// returns new slice with filtered etries only
+// returns new slice with filtered entries only
 func validateEndpoints(e *[]Endpoint) []Endpoint {
 	var outEndoints []Endpoint
 	for _, endpoint := range *e {
@@ -177,12 +177,12 @@ func validateEndpoints(e *[]Endpoint) []Endpoint {
 		if urlExist == "" || nameExist == "" {
 			errorLog.Printf("Validation failed: URL or Name not exist, skipping...")
 		} else {
-			debugLogFunc("Validation passed url=" + urlExist + " name=" + nameExist)
+			printDebug("Validation passed url=" + urlExist + " name=" + nameExist)
 			outEndoints = append(outEndoints, endpoint)
 		}
 	}
-	debugLogFunc("Num of entries in config file: " + fmt.Sprint(len(*e)))
-	debugLogFunc("Num of entries after validation: " + fmt.Sprint(len(outEndoints)))
+	printDebug("Num of entries in config file: " + fmt.Sprint(len(*e)))
+	printDebug("Num of entries after validation: " + fmt.Sprint(len(outEndoints)))
 	return outEndoints
 }
 
@@ -191,13 +191,25 @@ func validateEndpoints(e *[]Endpoint) []Endpoint {
 // takes argument as a path to config file
 // return nothing
 func main() {
+	path, _ := os.LookupEnv("LOG_FILE")
+	if path != "" {
+		file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			errorLog.Fatal("Error open log file:", err)
+		}
+		defer file.Close()
+		printDebug("File logging enabled")
+		infoLog.SetOutput(io.MultiWriter(os.Stdout, file))
+		debugLog.SetOutput(io.MultiWriter(os.Stdout, file))
+		errorLog.SetOutput(io.MultiWriter(os.Stderr, file))
+	}
 
 	if len(os.Args) < 2 {
 		errorLog.Fatal("Usage: go run main.go <config_file>")
 	}
 
 	filePath := os.Args[1]
-	debugLogFunc("Reading config file" + filePath)
+	printDebug("Reading config file" + filePath)
 	data, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		errorLog.Fatal("Error reading file:", err)
@@ -208,7 +220,7 @@ func main() {
 		errorLog.Fatal("Error parsing YAML:", err)
 	}
 	filteredEndoints := validateEndpoints(&endpoints)
-	debugLogFunc("Checking endpoints")
+	printDebug("Checking endpoints")
 	go logTimer()
 	monitorEndpoints(filteredEndoints)
 }
