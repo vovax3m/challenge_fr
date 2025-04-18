@@ -49,6 +49,7 @@ unset LOG_FILE // to send  logs only to Stdout/Stderr
 - request Body took whole endpoint not endpoint.Body
 - timing not implemented
 - no comments or additional messages
+- no input config validation
 
 # Troubleshooting steps:
 - Make application run, add go.mod
