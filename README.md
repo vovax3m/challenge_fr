@@ -30,7 +30,7 @@ docker build . -t challenge_fr:1
 ```
 //configs could be baked into the image and app executed without addition configs, but it's a bad practice, so mounting from host
 // -e LOG_LEVEL is optional to enable debug informaiton
-docker run -ti -e LOG_LEVEL=DEBUG -v '/path/to/sample.yaml:/go/sample.yaml:ro' challenge_fr:1 /go/challenge_fr /go/sample.yaml
+docker run -ti -e LOG_LEVEL=DEBUG -v '/path/to/sample.yaml:/go/sample.yaml:ro' challenge_fr:1 /go/sample.yaml
 ```
 # Feature flags
 ```
@@ -59,7 +59,7 @@ unset LOG_LEVEL // to show only report and errors
 
 # TODO:
 - Move timing (wait, latency) values to the separate config file or structure
-- Add input file/entry validation
+- <s>Add input file/entry validation</s>
 - Add an option to write logs to the file
 - Expose prometheus metrics
 

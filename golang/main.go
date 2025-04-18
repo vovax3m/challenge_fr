@@ -161,6 +161,26 @@ func debugLogFunc(message string) {
 	}
 }
 
+// validateEndpoints function checks if config entry has all required fields to check availabiliry
+// takes reference of endpoints from config file
+// returns new slice with filtered etries only
+func validateEndpoints(e *[]Endpoint) []Endpoint {
+	var outEndoints []Endpoint
+	for _, endpoint := range *e {
+		urlExist, nameExist := "", ""
+		urlExist, nameExist = endpoint.URL, endpoint.Name
+		if urlExist == "" || nameExist == "" {
+			errorLog.Printf("Validation failed: URL or Name not exist, skipping...")
+		} else {
+			debugLogFunc("Validation passed url=" + urlExist + " name=" + nameExist)
+			outEndoints = append(outEndoints, endpoint)
+		}
+	}
+	debugLogFunc("Num of entries in config file: " + fmt.Sprint(len(*e)))
+	debugLogFunc("Num of entries after validation: " + fmt.Sprint(len(outEndoints)))
+	return outEndoints
+}
+
 // main function is an app entrypoint
 // it validates input file and unmarchalling to structure
 // takes argument as a path to config file
@@ -182,7 +202,8 @@ func main() {
 	if err := yaml.Unmarshal(data, &endpoints); err != nil {
 		errorLog.Fatal("Error parsing YAML:", err)
 	}
+	filteredEndoints := validateEndpoints(&endpoints)
 	debugLogFunc("Checking endpoints")
 	go logTimer()
-	monitorEndpoints(endpoints)
+	monitorEndpoints(filteredEndoints)
 }
