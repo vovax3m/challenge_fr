@@ -36,6 +36,9 @@ docker run -ti -e LOG_LEVEL=DEBUG -v '/path/to/sample.yaml:/go/sample.yaml:ro' c
 ```
 export LOG_LEVEL=DEBUG // to enable detailed information
 unset LOG_LEVEL // to show only report and errors
+
+export LOG_FILE=/path/log.txt //to enable writing logs to the file
+unset LOG_FILE // to send  logs only to Stdout/Stderr
 ```
 # Found issues with original code:
 
@@ -62,6 +65,6 @@ unset LOG_LEVEL // to show only report and errors
 # TODO:
 - <s>Move timing (wait, latency) values to the separate config file or structure</s>
 - <s>Add input file/entry validation</s>
-- Add an option to write logs to the file
+- <s>Add an option to write logs to the file</s>
 - Expose prometheus metrics
 
