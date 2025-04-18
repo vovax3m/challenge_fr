@@ -35,10 +35,15 @@ type DomainStats struct {
 
 // various variables initialization of the app
 var (
-	stats    = make(map[string]*DomainStats)
-	infoLog  = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
-	debugLog = log.New(os.Stdout, "DEBUG: ", log.Ldate|log.Ltime|log.Lshortfile)
-	errorLog = log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
+	stats                          = make(map[string]*DomainStats)
+	infoLog                        = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+	debugLog                       = log.New(os.Stdout, "DEBUG: ", log.Ldate|log.Ltime|log.Lshortfile)
+	errorLog                       = log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
+	sleepLog         time.Duration = 15
+	sleepCheck       time.Duration = 15
+	latencyThreshold int64         = 500
+	httpRespMin      int           = 200
+	httpRespMax      int           = 300
 )
 
 // checkHealth function takes one endpoint struct and makes a http call to the configured url and increments stats' counters.
@@ -76,7 +81,7 @@ func checkHealth(endpoint Endpoint) {
 	resp, err := client.Do(req)
 	reqcompleted := time.Since(reqstart).Milliseconds()
 	stats[domain].Total++
-	if err == nil && resp.StatusCode >= 200 && resp.StatusCode < 300 && reqcompleted < 500 {
+	if err == nil && resp.StatusCode >= httpRespMin && resp.StatusCode < httpRespMax && reqcompleted < latencyThreshold {
 		stats[domain].Success++
 		debugLogFunc("   request \"" + endpoint.Name + "\" for " + domain + " is succedded and added to the success counter")
 	} else {
@@ -124,7 +129,7 @@ func monitorEndpoints(endpoints []Endpoint) {
 		for _, endpoint := range endpoints {
 			go checkHealth(endpoint)
 		}
-		time.Sleep(15 * time.Second)
+		time.Sleep(sleepCheck * time.Second)
 	}
 }
 
@@ -134,7 +139,7 @@ func monitorEndpoints(endpoints []Endpoint) {
 // used as an independent logs renderer
 func logTimer() {
 	for {
-		time.Sleep(15 * time.Second)
+		time.Sleep(sleepLog * time.Second)
 		logResults()
 	}
 }
