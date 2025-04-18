@@ -56,9 +56,11 @@ unset LOG_LEVEL // to show only report and errors
 - Split logTimer and checkHealth to goroutines for independent execution 
 - Wrap to docker
 - Update readme file
+- Add config entry validation
+- Moved hardcoded timers and thresholds to vars
 
 # TODO:
-- Move timing (wait, latency) values to the separate config file or structure
+- <s>Move timing (wait, latency) values to the separate config file or structure</s>
 - <s>Add input file/entry validation</s>
 - Add an option to write logs to the file
 - Expose prometheus metrics
