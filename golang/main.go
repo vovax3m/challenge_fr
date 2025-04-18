@@ -7,6 +7,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"gopkg.in/yaml.v3"
 	"io"
 	"io/ioutil"
@@ -46,6 +49,27 @@ var (
 	httpRespMax      int           = 300
 )
 
+//metrics variables
+var (
+	serviceUptime = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "uptime_total",
+		Help: "The total number of service uptime",
+	})
+	domainAvail = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "domain_availability_percentage",
+		Help: "Percentage of domains availability",
+	}, []string{"domain"})
+	latencyLast = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "request_latency_miliseconds_last",
+		Help: "Last request latency per domain",
+	}, []string{"domain"})
+	latencyHistogram = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "request_latency_miliseconds",
+		Help:    "HTTP request latency in milliseconds",
+		Buckets: []float64{1, 10, 50, 100, 250, 500, 750, 1000},
+	}, []string{"domain"})
+)
+
 // checkHealth function takes one endpoint struct and makes a http call to the configured url and increments stats' counters.
 // it receives the instance of endpoint  to process
 // it returns nothing
@@ -81,6 +105,8 @@ func checkHealth(endpoint Endpoint) {
 	resp, err := client.Do(req)
 	reqcompleted := time.Since(reqstart).Milliseconds()
 	stats[domain].Total++
+	latencyHistogram.WithLabelValues(domain).Observe(float64(reqcompleted))
+	latencyLast.WithLabelValues(domain).Set(float64(reqcompleted))
 	if err == nil && resp.StatusCode >= httpRespMin && resp.StatusCode < httpRespMax && reqcompleted < latencyThreshold {
 		stats[domain].Success++
 		printDebug("   request \"" + endpoint.Name + "\" for " + domain + " is succedded and added to the success counter")
@@ -153,6 +179,7 @@ func logResults() {
 		percentage := int(math.Round(100 * float64(stat.Success) / float64(stat.Total)))
 		printDebug(domain + " success/total=" + fmt.Sprint(stat.Success) + "/" + fmt.Sprint(stat.Total) + "=" + fmt.Sprint(percentage))
 		infoLog.Printf("%s has %d%% availability\n", domain, percentage)
+		domainAvail.WithLabelValues(domain).Set(float64(percentage))
 	}
 }
 
@@ -186,11 +213,30 @@ func validateEndpoints(e *[]Endpoint) []Endpoint {
 	return outEndoints
 }
 
+// serviceUptimeFunc increments timer every sec for updatime metric
+func serviceUptimeFunc() {
+	for {
+		serviceUptime.Inc()
+		time.Sleep(1 * time.Second)
+	}
+}
+
+// runMetrics starts prometheus webserver in goroutine
+func runMetrics() {
+	http.Handle("/metrics", promhttp.Handler())
+	http.ListenAndServe(":9090", nil)
+}
+
 // main function is an app entrypoint
 // it validates input file and unmarchalling to structure
 // takes argument as a path to config file
 // return nothing
 func main() {
+	// register histogram metric manually
+	prometheus.MustRegister(latencyHistogram)
+	//start uptime metric goroutine
+	go serviceUptimeFunc()
+	// enable file logging
 	path, _ := os.LookupEnv("LOG_FILE")
 	if path != "" {
 		file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -222,5 +268,7 @@ func main() {
 	filteredEndoints := validateEndpoints(&endpoints)
 	printDebug("Checking endpoints")
 	go logTimer()
+	go runMetrics()
 	monitorEndpoints(filteredEndoints)
+
 }

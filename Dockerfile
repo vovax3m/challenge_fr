@@ -11,4 +11,6 @@ COPY  --from=builder /golang/golang/challenge_fr /go/challenge_fr
 
 MAINTAINER vla2mir@gmail.com
 
+EXPOSE 9090
+
 ENTRYPOINT ["/go/challenge_fr"]
